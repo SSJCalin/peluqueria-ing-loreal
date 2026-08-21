@@ -1,0 +1,91 @@
+# ============================================
+#  Wonest / Peluqueria ING - .gitignore
+# ============================================
+
+# ---- Datos sensibles (NUNCA subir) ----
+# Base de datos: contiene nombres y telefonos de clientes reales
+*.db
+*.db-shm
+*.db-wal
+
+# Configuracion local con contrasenas
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+# Credenciales de cualquier tipo
+credentials.json
+*.pfx
+*.key
+
+
+# ---- Compilacion de .NET ----
+bin/
+obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Bb]uild/
+[Bb]uilds/
+
+
+# ---- Visual Studio / VS Code ----
+.vs/
+.vscode/
+!.vscode/extensions.json
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+
+# ---- Publicacion ----
+publish/
+*.publishsettings
+PublishScripts/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.pubxml.user
+
+
+# ---- Paquetes NuGet ----
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+*.nuget.props
+*.nuget.targets
+
+
+# ---- Pruebas ----
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+TestResults/
+
+
+# ---- Archivos temporales del sistema ----
+*.tmp
+*.temp
+*.log
+*.cache
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+
+# ---- Node (por si en el futuro se anade algo de front) ----
+node_modules/
+npm-debug.log*
+yarn-error.log*
