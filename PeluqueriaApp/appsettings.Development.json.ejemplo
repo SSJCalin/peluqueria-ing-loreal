@@ -1,0 +1,14 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "UsuariosIniciales": {
+    "reyes": "PON_AQUI_LA_CONTRASENA",
+    "TereSalv": "PON_AQUI_LA_CONTRASENA",
+    "Terech": "PON_AQUI_LA_CONTRASENA",
+    "AdminspING": "PON_AQUI_LA_CONTRASENA"
+  }
+}
