@@ -1,0 +1,459 @@
+/* ============================================================
+   Peluqueria y Manicura ING - estilos de la pagina de reservas
+   Paleta: azul marino profundo + naranja ING como acento de
+   peluqueria, verde salvia para manicura. Tipografia serif
+   editorial para el titulo, sans limpia para el resto.
+   ============================================================ */
+
+.marco {
+    min-height: 100vh;
+    width: 100%;
+    background: linear-gradient(170deg, #14142B 0%, #1E1E3F 100%);
+    padding: 2rem 1rem 4rem;
+    font-family: 'Karla', system-ui, sans-serif;
+}
+
+.contenedor {
+    max-width: 30rem;
+    margin: 0 auto;
+}
+
+/* ---------- Cabecera / titulo ---------- */
+.cabecera {
+    text-align: center;
+    margin-bottom: 1.75rem;
+}
+
+.titulo {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    color: #F5F1EC;
+    line-height: 0.95;
+    margin: 0;
+    font-size: 2.1rem;
+    letter-spacing: -0.01em;
+}
+
+.titulo-linea {
+    display: block;
+}
+
+.titulo-amp {
+    display: block;
+    font-style: italic;
+    font-size: 1.15rem;
+    color: #FF6200;
+    margin: 0.1rem 0;
+}
+
+.marca {
+    display: inline-block;
+    margin-top: 0.9rem;
+    padding: 0.25rem 0.9rem;
+    background: #FF6200;
+    color: #14142B;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    font-size: 0.85rem;
+    border-radius: 2px;
+}
+
+.subtitulo {
+    margin: 0.9rem 0 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.22em;
+    color: #8A86A8;
+}
+
+/* ---------- Indicador de pasos ---------- */
+.pasos {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 0.75rem;
+}
+
+.paso {
+    flex: 1;
+    text-align: center;
+    padding: 0.4rem 0.2rem;
+    border-radius: 6px 6px 0 0;
+    transition: background-color 0.25s;
+}
+
+.paso-num {
+    display: block;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: #6E6A90;
+}
+
+.paso-txt {
+    display: none;
+    font-size: 0.68rem;
+    color: #6E6A90;
+    margin-top: 1px;
+}
+
+.paso-activo {
+    background: #FBF8F5;
+}
+
+.paso-activo .paso-num { color: #FF6200; font-weight: 700; }
+.paso-activo .paso-txt { color: #2A2A44; }
+
+.paso-hecho { opacity: 0.5; }
+
+@media (min-width: 420px) {
+    .paso-txt { display: block; }
+}
+
+/* ---------- Tarjeta principal ---------- */
+.tarjeta {
+    background: #FBF8F5;
+    border-radius: 14px;
+    padding: 1.4rem;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.h-seccion {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #2A2A44;
+    margin: 0 0 0.9rem;
+}
+
+.volver {
+    background: none;
+    border: none;
+    color: #6B6784;
+    font-size: 0.85rem;
+    padding: 0.2rem 0;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+}
+
+.volver:hover { color: #2A2A44; }
+
+/* ---------- Paso 1: categorias ---------- */
+.cat {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    text-align: left;
+    padding: 1.1rem 1.2rem;
+    border-radius: 11px;
+    border: 1px solid #E6DED6;
+    background: #FFFFFF;
+    cursor: pointer;
+    margin-bottom: 0.7rem;
+    transition: transform 0.18s, border-color 0.18s;
+}
+
+.cat:hover { transform: translateY(-2px); }
+
+.cat-peluqueria:hover { border-color: #FF6200; }
+.cat-manicura:hover { border-color: #2E7D6F; }
+
+.cat h3 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin: 0 0 0.2rem;
+    color: #2A2A44;
+}
+
+.cat p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #6B6784;
+}
+
+.cat-nota {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+}
+
+.cat-peluqueria .cat-nota { color: #FF6200; }
+.cat-manicura .cat-nota { color: #2E7D6F; }
+
+.cat-flecha { font-size: 1.1rem; color: #B9B3C7; }
+.cat-peluqueria:hover .cat-flecha { color: #FF6200; }
+.cat-manicura:hover .cat-flecha { color: #2E7D6F; }
+
+/* ---------- Paso 2: servicios ---------- */
+.lista-servicios {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: 26rem;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.servicio {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 0.9rem;
+    border-radius: 9px;
+    border: 1px solid #E6DED6;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.servicio:hover {
+    border-color: #FF6200;
+    background: #FFF8F3;
+}
+
+.servicio-info { display: flex; flex-direction: column; }
+
+.servicio-nombre {
+    font-size: 0.92rem;
+    color: #2A2A44;
+}
+
+.servicio-dur {
+    font-size: 0.72rem;
+    color: #8B87A0;
+    margin-top: 2px;
+}
+
+.servicio-precio {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #FF6200;
+    white-space: nowrap;
+}
+
+/* ---------- Paso 3: dias y horas ---------- */
+.resumen-linea {
+    font-size: 0.78rem;
+    color: #6B6784;
+    margin: -0.4rem 0 1rem;
+}
+
+.dias {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.dia {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0.7rem;
+    border-radius: 9px;
+    border: 1px solid #E6DED6;
+    background: #FFFFFF;
+    cursor: pointer;
+    min-width: 3.1rem;
+}
+
+.dia-sem {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8B87A0;
+}
+
+.dia-num {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2A2A44;
+    line-height: 1.2;
+}
+
+.dia-mes {
+    font-size: 0.62rem;
+    color: #8B87A0;
+    text-transform: uppercase;
+}
+
+.dia-activo {
+    background: #14142B;
+    border-color: #14142B;
+}
+
+.dia-activo .dia-sem,
+.dia-activo .dia-num,
+.dia-activo .dia-mes { color: #FBF8F5; }
+
+.horas {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+}
+
+.hora {
+    padding: 0.55rem 0.2rem;
+    border-radius: 8px;
+    border: 1px solid #E6DED6;
+    background: #FFFFFF;
+    color: #2A2A44;
+    font-size: 0.82rem;
+    text-align: center;
+    cursor: pointer;
+}
+
+.hora:hover { border-color: #FF6200; }
+
+.hora-activa {
+    background: #FF6200;
+    border-color: #FF6200;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+.hora-ocupada {
+    background: repeating-linear-gradient(135deg, #E4E0E5 0, #E4E0E5 1px, #F1EEEC 1px, #F1EEEC 7px);
+    color: #9A94A5;
+    font-size: 0.68rem;
+    cursor: not-allowed;
+    border-color: #E4E0E5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nota-privacidad {
+    font-size: 0.68rem;
+    color: #8B87A0;
+    margin-top: 0.9rem;
+}
+
+/* ---------- Paso 4 y 5: datos, resumen, exito ---------- */
+.etiqueta {
+    display: block;
+    font-size: 0.72rem;
+    color: #6B6784;
+    margin: 0.8rem 0 0.25rem;
+}
+
+.campo {
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    border-radius: 9px;
+    border: 1px solid #E6DED6;
+    background: #FFFFFF;
+    font-size: 0.9rem;
+    color: #2A2A44;
+    font-family: inherit;
+}
+
+.campo:focus {
+    outline: none;
+    border-color: #FF6200;
+}
+
+.resumen-caja {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    background: #F3EEE9;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.resumen-caja strong {
+    font-size: 0.92rem;
+    color: #2A2A44;
+}
+
+.resumen-caja span {
+    font-size: 0.76rem;
+    color: #6B6784;
+    text-transform: capitalize;
+}
+
+.resumen-precio {
+    font-weight: 700;
+    color: #FF6200 !important;
+    text-transform: none !important;
+    margin-top: 0.2rem;
+}
+
+.cta {
+    width: 100%;
+    margin-top: 1.1rem;
+    padding: 0.85rem;
+    border: none;
+    border-radius: 10px;
+    background: #FF6200;
+    color: #FFFFFF;
+    font-size: 0.92rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.cta:hover:not(:disabled) { opacity: 0.9; }
+
+.cta:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.cta-secundario {
+    background: transparent;
+    color: #2A2A44;
+    border: 1px solid #E6DED6;
+}
+
+.exito { text-align: center; }
+
+.exito-icono {
+    width: 3.2rem;
+    height: 3.2rem;
+    margin: 0 auto 0.9rem;
+    border-radius: 50%;
+    background: #E3F0E7;
+    color: #3E7A52;
+    font-size: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.exito-sub {
+    font-size: 0.88rem;
+    color: #6B6784;
+    margin: 0 0 1rem;
+}
+
+.exito-detalle {
+    font-size: 0.76rem;
+    color: #6B6784;
+    margin-top: 0.7rem;
+}
+
+.exito .resumen-caja { text-align: left; }
+
+/* ---------- Estados varios ---------- */
+.cargando, .aviso {
+    font-size: 0.85rem;
+    color: #6B6784;
+    text-align: center;
+    padding: 1.2rem 0;
+}
+
+.error {
+    font-size: 0.8rem;
+    color: #C1352B;
+    margin-top: 0.7rem;
+}

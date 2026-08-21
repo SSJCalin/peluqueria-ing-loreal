@@ -1,0 +1,277 @@
+/* Pagina de ausencias y vacaciones */
+
+.a-marco {
+    min-height: 100vh;
+    background: #14142B;
+    font-family: 'Karla', system-ui, sans-serif;
+    padding-bottom: 3rem;
+}
+
+.a-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.a-marca-bloque { display: flex; align-items: center; gap: 0.7rem; }
+
+.a-marca {
+    background: #FF6200;
+    color: #14142B;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+}
+
+.a-marca-txt { color: #8A86A8; font-size: 0.85rem; }
+
+.a-usuario { display: flex; align-items: center; gap: 0.8rem; }
+.a-usuario span { color: #F5F1EC; font-size: 0.85rem; }
+
+.a-volver {
+    color: #C9C4DA;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.35rem 0.75rem;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    text-decoration: none;
+}
+
+.a-volver:hover { background: rgba(255, 255, 255, 0.16); }
+
+.a-contenido {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 1.2rem 0.9rem 0;
+}
+
+.a-cargando {
+    color: #8A86A8;
+    text-align: center;
+    padding: 2.5rem 0;
+}
+
+/* ---------- Tarjetas ---------- */
+.a-tarjeta {
+    background: #FBF8F5;
+    border-radius: 13px;
+    padding: 1.3rem;
+    margin-bottom: 1.1rem;
+}
+
+.a-titulo {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #2A2A44;
+    margin: 0 0 0.3rem;
+}
+
+.a-ayuda {
+    font-size: 0.82rem;
+    color: #6B6784;
+    margin: 0 0 1.1rem;
+}
+
+/* ---------- Formulario ---------- */
+.a-fila {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.a-campo {
+    flex: 1;
+    min-width: 13rem;
+    margin-bottom: 0.8rem;
+}
+
+.a-etiqueta {
+    display: block;
+    font-size: 0.75rem;
+    color: #6B6784;
+    margin-bottom: 0.3rem;
+}
+
+.a-select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border-radius: 9px;
+    border: 1px solid #E6DED6;
+    background: #FFFFFF;
+    font-size: 0.88rem;
+    color: #2A2A44;
+    font-family: inherit;
+}
+
+.a-select:focus { outline: none; border-color: #FF6200; }
+.a-select:disabled { background: #F1EAE4; color: #6B6784; }
+
+.a-nota {
+    display: block;
+    font-size: 0.72rem;
+    color: #8B87A0;
+    margin-top: 0.3rem;
+}
+
+.a-resumen {
+    background: #F3EEE9;
+    border-radius: 9px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.85rem;
+    color: #2A2A44;
+    margin: 0.9rem 0 0;
+}
+
+.a-error {
+    font-size: 0.84rem;
+    color: #C1352B;
+    background: #FBEAE8;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    margin: 0.9rem 0 0;
+}
+
+.a-ok {
+    font-size: 0.84rem;
+    color: #3E7A52;
+    background: #E3F0E7;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    margin: 0.9rem 0 0;
+}
+
+/* ---------- Conflicto de citas ---------- */
+.a-conflicto {
+    background: #FFF4E2;
+    border-left: 3px solid #E5A93C;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin: 0.9rem 0 0;
+}
+
+.a-conflicto strong {
+    display: block;
+    font-size: 0.85rem;
+    color: #8A5A12;
+    margin-bottom: 0.5rem;
+}
+
+.a-conflicto ul {
+    margin: 0 0 0.5rem;
+    padding-left: 1.2rem;
+}
+
+.a-conflicto li {
+    font-size: 0.8rem;
+    color: #6B6784;
+    margin-bottom: 0.2rem;
+}
+
+/* ---------- Botones ---------- */
+.a-botones {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.a-btn-pri {
+    background: #FF6200;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 9px;
+    padding: 0.7rem 1.3rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.a-btn-pri:hover:not(:disabled) { opacity: 0.9; }
+.a-btn-pri:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.a-btn-sec {
+    background: transparent;
+    color: #2A2A44;
+    border: 1px solid #E6DED6;
+    border-radius: 9px;
+    padding: 0.7rem 1.1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.a-btn-sec:hover { background: #F3EEE9; }
+
+/* ---------- Lista de ausencias ---------- */
+.a-vacio {
+    font-size: 0.85rem;
+    color: #8B87A0;
+    text-align: center;
+    padding: 1.5rem 0;
+}
+
+.a-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.a-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    background: #FFFFFF;
+    border: 1px solid #E6DED6;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    flex-wrap: wrap;
+}
+
+.a-item-curso {
+    border-left: 3px solid #E5A93C;
+    background: #FFFDF8;
+}
+
+.a-item-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+
+.a-item-info strong { font-size: 0.9rem; color: #2A2A44; }
+
+.a-item-fechas { font-size: 0.8rem; color: #6B6784; }
+
+.a-item-detalle { font-size: 0.75rem; color: #8B87A0; }
+
+.a-item-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.a-badge {
+    background: #FFF0D6;
+    color: #8A5A12;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.a-btn-borrar {
+    background: transparent;
+    border: 1px solid #E6DED6;
+    color: #C1352B;
+    border-radius: 8px;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.a-btn-borrar:hover { background: #FBEAE8; }

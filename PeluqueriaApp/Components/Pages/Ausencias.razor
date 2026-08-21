@@ -1,0 +1,349 @@
+@page "/ausencias"
+@rendermode InteractiveServer
+@layout PeluqueriaApp.Components.Layout.LayoutVacio
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PeluqueriaApp.Modelos
+@using PeluqueriaApp.Logica
+@using System.Security.Claims
+@inject PeluqueriaApp.Servicios.ServicioCitas Gestion
+
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+<PageTitle>Ausencias y vacaciones | Panel ING</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="a-marco">
+
+            <header class="a-cabecera">
+                <div class="a-marca-bloque">
+                    <span class="a-marca">ING</span>
+                    <span class="a-marca-txt">Ausencias y vacaciones</span>
+                </div>
+                <div class="a-usuario">
+                    <span>@NombreUsuario(context.User)</span>
+                    <a class="a-volver" href="/panel">Volver al panel</a>
+                </div>
+            </header>
+
+            <div class="a-contenido">
+
+                @if (cargando)
+                {
+                    <p class="a-cargando">Cargando...</p>
+                }
+                else
+                {
+                    <!-- ============ FORMULARIO NUEVO PERIODO ============ -->
+                    <div class="a-tarjeta">
+                        <h2 class="a-titulo">Registrar una ausencia</h2>
+                        <p class="a-ayuda">
+                            Vacaciones, medico, asuntos propios... Durante esas fechas no se
+                            podran reservar citas con esa persona.
+                        </p>
+
+                        <div class="a-fila">
+                            <div class="a-campo">
+                                <label class="a-etiqueta">Profesional</label>
+                                @if (EsAdministracion(context.User))
+                                {
+                                    <select class="a-select" @bind="fProfesional">
+                                        @foreach (var p in plantilla)
+                                        {
+                                            <option value="@p.Nombre">@p.Nombre (@p.DiasEnTexto())</option>
+                                        }
+                                    </select>
+                                }
+                                else
+                                {
+                                    <input class="a-select" value="@fProfesional" disabled />
+                                    <span class="a-nota">Solo puedes registrar tus propias ausencias.</span>
+                                }
+                            </div>
+
+                            <div class="a-campo">
+                                <label class="a-etiqueta">Alcance</label>
+                                <select class="a-select" @bind="fFranja">
+                                    <option value="completo">Dia(s) completo(s)</option>
+                                    <option value="primera">Solo primera mitad del dia</option>
+                                    <option value="segunda">Solo segunda mitad del dia</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="a-fila">
+                            <div class="a-campo">
+                                <label class="a-etiqueta">Desde</label>
+                                <input type="date" class="a-select" @bind="fDesde" />
+                            </div>
+                            <div class="a-campo">
+                                <label class="a-etiqueta">Hasta (incluido)</label>
+                                <input type="date" class="a-select" @bind="fHasta" />
+                            </div>
+                        </div>
+
+                        <label class="a-etiqueta">Motivo</label>
+                        <input class="a-select" @bind="fMotivo" placeholder="Vacaciones, medico, asuntos propios..." />
+
+                        @if (DiasSeleccionados() > 0)
+                        {
+                            <p class="a-resumen">
+                                Se bloquearan <strong>@DiasSeleccionados() dia(s)</strong>
+                                (@TextoFranja(fFranja)) para <strong>@fProfesional</strong>.
+                            </p>
+                        }
+
+                        @if (!string.IsNullOrEmpty(mensajeError))
+                        {
+                            <p class="a-error">@mensajeError</p>
+                        }
+                        @if (!string.IsNullOrEmpty(mensajeOk))
+                        {
+                            <p class="a-ok">@mensajeOk</p>
+                        }
+
+                        @if (citasEnConflicto.Count > 0)
+                        {
+                            <div class="a-conflicto">
+                                <strong>Atencion: hay @citasEnConflicto.Count cita(s) ya reservadas en esas fechas</strong>
+                                <ul>
+                                    @foreach (var c in citasEnConflicto.Take(8))
+                                    {
+                                        <li>
+                                            @c.Fecha.ToDateTime(TimeOnly.MinValue).ToString("ddd d MMM") ·
+                                            @LogicaReservas.AHora(c.InicioMinutos) · @c.Cliente
+                                            (@c.Telefono)
+                                        </li>
+                                    }
+                                </ul>
+                                @if (citasEnConflicto.Count > 8)
+                                {
+                                    <p class="a-nota">y @(citasEnConflicto.Count - 8) mas...</p>
+                                }
+                                <p class="a-nota">
+                                    Habria que avisar a esos clientes o reubicar sus citas.
+                                    La ausencia se puede registrar igualmente.
+                                </p>
+                            </div>
+                        }
+
+                        <div class="a-botones">
+                            <button class="a-btn-sec" @onclick="ComprobarConflictos">
+                                Comprobar citas afectadas
+                            </button>
+                            <button class="a-btn-pri" disabled="@guardando" @onclick="() => Guardar(context.User)">
+                                @(guardando ? "Guardando..." : "Registrar ausencia")
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ============ LISTA DE AUSENCIAS ============ -->
+                    <div class="a-tarjeta">
+                        <h2 class="a-titulo">Ausencias registradas</h2>
+
+                        @if (periodos.Count == 0)
+                        {
+                            <p class="a-vacio">No hay ausencias registradas ni previstas.</p>
+                        }
+                        else
+                        {
+                            <div class="a-lista">
+                                @foreach (var p in periodos)
+                                {
+                                    var per = p;
+                                    var enCurso = per.CubreFecha(DateOnly.FromDateTime(DateTime.Today));
+                                    <div class="a-item @(enCurso ? "a-item-curso" : "")">
+                                        <div class="a-item-info">
+                                            <strong>@per.Profesional</strong>
+                                            <span class="a-item-fechas">
+                                                @per.FechaInicio.ToDateTime(TimeOnly.MinValue).ToString("d MMM yyyy")
+                                                @if (per.FechaFin != per.FechaInicio)
+                                                {
+                                                    <text> — @per.FechaFin.ToDateTime(TimeOnly.MinValue).ToString("d MMM yyyy")</text>
+                                                }
+                                                · @per.Dias dia(s)
+                                            </span>
+                                            <span class="a-item-detalle">
+                                                @per.FranjaEnTexto()
+                                                @if (!string.IsNullOrWhiteSpace(per.Motivo))
+                                                {
+                                                    <text> · @per.Motivo</text>
+                                                }
+                                            </span>
+                                        </div>
+                                        <div class="a-item-acciones">
+                                            @if (enCurso)
+                                            {
+                                                <span class="a-badge">En curso</span>
+                                            }
+                                            @if (PuedeBorrar(context.User, per))
+                                            {
+                                                <button class="a-btn-borrar" @onclick="() => Borrar(per.Id)">
+                                                    Quitar
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+
+@code {
+    private bool cargando = true;
+    private bool guardando = false;
+
+    private List<Profesional> plantilla = new();
+    private List<BloqueoPeriodo> periodos = new();
+    private List<Cita> citasEnConflicto = new();
+
+    // Formulario
+    private string fProfesional = "";
+    private string fFranja = "completo";
+    private DateTime fDesde = DateTime.Today;
+    private DateTime fHasta = DateTime.Today;
+    private string fMotivo = "";
+
+    private string mensajeError = "";
+    private string mensajeOk = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        plantilla = await Gestion.ObtenerTodasLasProfesionalesAsync();
+        periodos = await Gestion.ObtenerPeriodosVigentesAsync();
+        cargando = false;
+    }
+
+    // ---------------------------------------------------------- permisos
+    private static string NombreUsuario(ClaimsPrincipal u)
+        => u.FindFirst("NombreCompleto")?.Value ?? u.Identity?.Name ?? "";
+
+    private static bool EsAdministracion(ClaimsPrincipal u)
+        => NombreUsuario(u).Equals("Administración", StringComparison.OrdinalIgnoreCase);
+
+    // Administracion puede quitar cualquiera; cada profesional solo las suyas.
+    private bool PuedeBorrar(ClaimsPrincipal u, BloqueoPeriodo per)
+        => EsAdministracion(u) || per.Profesional == NombreUsuario(u);
+
+    // Si no es Administracion, el formulario se fija a su propio nombre.
+    private void AjustarProfesionalPorPermisos(ClaimsPrincipal u)
+    {
+        if (EsAdministracion(u))
+        {
+            if (string.IsNullOrEmpty(fProfesional) && plantilla.Count > 0)
+                fProfesional = plantilla[0].Nombre;
+        }
+        else
+        {
+            fProfesional = NombreUsuario(u);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Se ajusta en el primer render, cuando ya tenemos el usuario
+        if (string.IsNullOrEmpty(fProfesional) && plantilla.Count > 0)
+            fProfesional = plantilla[0].Nombre;
+    }
+
+    // ---------------------------------------------------------- ayudas
+    private int DiasSeleccionados()
+    {
+        var d1 = DateOnly.FromDateTime(fDesde);
+        var d2 = DateOnly.FromDateTime(fHasta);
+        return d2 < d1 ? 0 : d2.DayNumber - d1.DayNumber + 1;
+    }
+
+    private static string TextoFranja(string f) => f switch
+    {
+        "primera" => "solo la primera mitad de cada dia",
+        "segunda" => "solo la segunda mitad de cada dia",
+        _ => "dia completo"
+    };
+
+    private string CategoriaDe(string profesional)
+        => plantilla.FirstOrDefault(p => p.Nombre == profesional)?.Categoria ?? "peluqueria";
+
+    // ---------------------------------------------------------- acciones
+    private async Task ComprobarConflictos()
+    {
+        mensajeError = "";
+        mensajeOk = "";
+
+        if (DiasSeleccionados() <= 0)
+        {
+            mensajeError = "La fecha de fin no puede ser anterior a la de inicio.";
+            citasEnConflicto = new();
+            return;
+        }
+
+        citasEnConflicto = await Gestion.ObtenerCitasEnRangoDeProfesionalAsync(
+            fProfesional, DateOnly.FromDateTime(fDesde), DateOnly.FromDateTime(fHasta));
+
+        if (citasEnConflicto.Count == 0)
+            mensajeOk = "No hay citas reservadas en esas fechas. Se puede registrar sin problema.";
+    }
+
+    private async Task Guardar(ClaimsPrincipal usuario)
+    {
+        mensajeError = "";
+        mensajeOk = "";
+
+        // Seguridad: si no es Administracion, forzamos que sea su propio nombre
+        if (!EsAdministracion(usuario))
+            fProfesional = NombreUsuario(usuario);
+
+        if (string.IsNullOrWhiteSpace(fProfesional))
+        {
+            mensajeError = "Indica de quien es la ausencia.";
+            return;
+        }
+
+        if (DiasSeleccionados() <= 0)
+        {
+            mensajeError = "La fecha de fin no puede ser anterior a la de inicio.";
+            return;
+        }
+
+        guardando = true;
+
+        var resultado = await Gestion.CrearPeriodoAsync(
+            fProfesional,
+            CategoriaDe(fProfesional),
+            DateOnly.FromDateTime(fDesde),
+            DateOnly.FromDateTime(fHasta),
+            fFranja,
+            string.IsNullOrWhiteSpace(fMotivo) ? "Ausencia" : fMotivo.Trim(),
+            NombreUsuario(usuario));
+
+        guardando = false;
+
+        if (resultado.Exito)
+        {
+            mensajeOk = resultado.Mensaje;
+            fMotivo = "";
+            citasEnConflicto = new();
+            periodos = await Gestion.ObtenerPeriodosVigentesAsync();
+        }
+        else
+        {
+            mensajeError = resultado.Mensaje;
+        }
+    }
+
+    private async Task Borrar(int id)
+    {
+        await Gestion.EliminarPeriodoAsync(id);
+        periodos = await Gestion.ObtenerPeriodosVigentesAsync();
+        mensajeOk = "Ausencia eliminada.";
+        mensajeError = "";
+    }
+}

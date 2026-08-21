@@ -1,0 +1,323 @@
+@page "/reservas"
+@rendermode InteractiveServer
+@layout PeluqueriaApp.Components.Layout.LayoutVacio
+@using PeluqueriaApp.Modelos
+@using PeluqueriaApp.Logica
+@inject PeluqueriaApp.Servicios.ServicioCitas Citas
+
+<PageTitle>Reservar cita | Peluqueria y Manicura ING</PageTitle>
+
+<div class="marco">
+    <div class="contenedor">
+
+        <header class="cabecera">
+            <h1 class="titulo">
+                <span class="titulo-linea">Peluqueria</span>
+                <span class="titulo-amp">y</span>
+                <span class="titulo-linea">Manicura</span>
+            </h1>
+            <div class="marca">ING</div>
+            <p class="subtitulo">RESERVA TU CITA</p>
+        </header>
+
+        <div class="pasos">
+            @for (int i = 1; i <= 5; i++)
+            {
+                var n = i;
+                <div class="paso @(n == paso ? "paso-activo" : "") @(n < paso ? "paso-hecho" : "")">
+                    <span class="paso-num">@n.ToString("D2")</span>
+                    <span class="paso-txt">@NombrePaso(n)</span>
+                </div>
+            }
+        </div>
+
+        <div class="tarjeta">
+
+            @if (paso == 1)
+            {
+                <h2 class="h-seccion">Que te apetece hoy?</h2>
+
+                <button class="cat cat-peluqueria" @onclick='() => ElegirCategoria("peluqueria")'>
+                    <div class="cat-cuerpo">
+                        <h3>Peluqueria</h3>
+                        <p>13:00 - 17:00 &middot; Lunes a viernes</p>
+                        <span class="cat-nota">2 profesionales en paralelo</span>
+                    </div>
+                    <span class="cat-flecha">&rarr;</span>
+                </button>
+
+                <button class="cat cat-manicura" @onclick='() => ElegirCategoria("manicura")'>
+                    <div class="cat-cuerpo">
+                        <h3>Manicura</h3>
+                        <p>13:00 - 16:00 &middot; Lunes a viernes</p>
+                        <span class="cat-nota">1 profesional</span>
+                    </div>
+                    <span class="cat-flecha">&rarr;</span>
+                </button>
+            }
+            else if (paso == 2)
+            {
+                <button class="volver" @onclick="() => paso = 1">&larr; Volver</button>
+                <h2 class="h-seccion">Elige el servicio</h2>
+
+                @if (servicios is null)
+                {
+                    <p class="cargando">Cargando servicios...</p>
+                }
+                else
+                {
+                    <div class="lista-servicios">
+                        @foreach (var s in servicios)
+                        {
+                            var sv = s;
+                            <button class="servicio" @onclick="() => ElegirServicio(sv)">
+                                <div class="servicio-info">
+                                    <span class="servicio-nombre">@sv.Nombre</span>
+                                    <span class="servicio-dur">@sv.DuracionMinutos min</span>
+                                </div>
+                                <span class="servicio-precio">@sv.Precio.ToString("0.00") &euro;</span>
+                            </button>
+                        }
+                    </div>
+                }
+            }
+            else if (paso == 3)
+            {
+                <button class="volver" @onclick="() => paso = 2">&larr; Volver</button>
+                <h2 class="h-seccion">Elige dia y hora</h2>
+                <p class="resumen-linea">
+                    @servicioElegido!.Nombre &middot; @servicioElegido.DuracionMinutos min &middot;
+                    @servicioElegido.Precio.ToString("0.00") &euro;
+                </p>
+
+                <div class="dias">
+                    @foreach (var d in DiasLaborables(10))
+                    {
+                        var dia = d;
+                        <button class="dia @(fechaElegida == dia ? "dia-activo" : "")"
+                                @onclick="() => ElegirFecha(dia)">
+                            <span class="dia-sem">@dia.ToDateTime(TimeOnly.MinValue).ToString("ddd")</span>
+                            <span class="dia-num">@dia.Day</span>
+                            <span class="dia-mes">@dia.ToDateTime(TimeOnly.MinValue).ToString("MMM")</span>
+                        </button>
+                    }
+                </div>
+
+                @if (fechaElegida is not null)
+                {
+                    @if (huecos is null)
+                    {
+                        <p class="cargando">Calculando huecos disponibles...</p>
+                    }
+                    else if (huecos.Count == 0)
+                    {
+                        @if (!abiertoEseDia)
+                        {
+                            <p class="aviso">
+                                Ese dia no hay servicio de @LogicaReservas.Categorias[categoria!].Nombre.
+                                Prueba con otro dia de la semana.
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="aviso">Ese dia no queda tiempo suficiente para este servicio.</p>
+                        }
+                    }
+                    else
+                    {
+                        <div class="horas">
+                            @foreach (var h in huecos)
+                            {
+                                var hu = h;
+                                if (hu.Disponible)
+                                {
+                                    <button class="hora @(horaElegida == hu.InicioMinutos ? "hora-activa" : "")"
+                                            @onclick="() => horaElegida = hu.InicioMinutos">
+                                        @hu.Hora
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="hora hora-ocupada" title="No disponible">Ocupado</div>
+                                }
+                            }
+                        </div>
+                        <p class="nota-privacidad">
+                            Las horas ocupadas nunca muestran quien las reservo.
+                        </p>
+                    }
+                }
+
+                <button class="cta" disabled="@(horaElegida is null)" @onclick="() => paso = 4">
+                    Continuar
+                </button>
+            }
+            else if (paso == 4)
+            {
+                <button class="volver" @onclick="() => paso = 3">&larr; Volver</button>
+                <h2 class="h-seccion">Tus datos</h2>
+
+                <div class="resumen-caja">
+                    <strong>@servicioElegido!.Nombre</strong>
+                    <span>
+                        @fechaElegida!.Value.ToDateTime(TimeOnly.MinValue).ToString("dddd d 'de' MMMM") &middot;
+                        @LogicaReservas.AHora(horaElegida!.Value) h &middot;
+                        @servicioElegido.Precio.ToString("0.00") &euro;
+                    </span>
+                </div>
+
+                <label class="etiqueta">Nombre y apellidos</label>
+                <input class="campo" @bind="nombreCliente" @bind:event="oninput" placeholder="Tu nombre" />
+
+                <label class="etiqueta">Telefono</label>
+                <input class="campo" @bind="telefonoCliente" @bind:event="oninput" placeholder="600 000 000" />
+
+                @if (!string.IsNullOrEmpty(mensajeError))
+                {
+                    <p class="error">@mensajeError</p>
+                }
+
+                <button class="cta" disabled="@(!DatosValidos() || guardando)" @onclick="ConfirmarReserva">
+                    @(guardando ? "Guardando..." : "Confirmar reserva")
+                </button>
+            }
+            else if (paso == 5)
+            {
+                <div class="exito">
+                    <div class="exito-icono">&check;</div>
+                    <h2 class="h-seccion">Cita reservada</h2>
+                    <p class="exito-sub">Te esperamos, @PrimerNombre(nombreCliente).</p>
+
+                    <div class="resumen-caja">
+                        <strong>@servicioElegido!.Nombre</strong>
+                        <span>
+                            @fechaElegida!.Value.ToDateTime(TimeOnly.MinValue).ToString("dddd d 'de' MMMM") &middot;
+                            @LogicaReservas.AHora(horaElegida!.Value) h
+                        </span>
+                        <span class="resumen-precio">@servicioElegido.Precio.ToString("0.00") &euro;</span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensajeExito))
+                    {
+                        <p class="exito-detalle">@mensajeExito</p>
+                    }
+
+                    <button class="cta cta-secundario" @onclick="Reiniciar">Hacer otra reserva</button>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private int paso = 1;
+    private string? categoria;
+    private List<Servicio>? servicios;
+    private Servicio? servicioElegido;
+    private DateOnly? fechaElegida;
+    private List<Hueco>? huecos;
+    private int? horaElegida;
+    private string nombreCliente = "";
+    private string telefonoCliente = "";
+    private string mensajeError = "";
+    private string mensajeExito = "";
+    private bool guardando = false;
+    private bool abiertoEseDia = true;
+
+    private string NombrePaso(int n) => n switch
+    {
+        1 => "Categoria",
+        2 => "Servicio",
+        3 => "Cita",
+        4 => "Datos",
+        _ => "Listo"
+    };
+
+    private async Task ElegirCategoria(string cat)
+    {
+        categoria = cat;
+        servicios = null;
+        paso = 2;
+        servicios = await Citas.ObtenerServiciosAsync(cat);
+    }
+
+    private void ElegirServicio(Servicio s)
+    {
+        servicioElegido = s;
+        fechaElegida = null;
+        horaElegida = null;
+        huecos = null;
+        paso = 3;
+    }
+
+    private async Task ElegirFecha(DateOnly f)
+    {
+        fechaElegida = f;
+        horaElegida = null;
+        huecos = null;
+        huecos = await Citas.ObtenerHuecosAsync(categoria!, f, servicioElegido!.Id);
+    }
+
+    private bool DatosValidos()
+        => !string.IsNullOrWhiteSpace(nombreCliente)
+           && telefonoCliente.Trim().Length >= 9;
+
+    private async Task ConfirmarReserva()
+    {
+        mensajeError = "";
+        guardando = true;
+
+        var resultado = await Citas.CrearCitaAsync(
+            categoria!, fechaElegida!.Value, horaElegida!.Value,
+            servicioElegido!.Id, nombreCliente.Trim(), telefonoCliente.Trim());
+
+        guardando = false;
+
+        if (resultado.Exito)
+        {
+            mensajeExito = resultado.Mensaje;
+            paso = 5;
+        }
+        else
+        {
+            mensajeError = resultado.Mensaje;
+            huecos = await Citas.ObtenerHuecosAsync(categoria!, fechaElegida.Value, servicioElegido.Id);
+        }
+    }
+
+    private void Reiniciar()
+    {
+        paso = 1;
+        categoria = null;
+        servicios = null;
+        servicioElegido = null;
+        fechaElegida = null;
+        huecos = null;
+        horaElegida = null;
+        nombreCliente = "";
+        telefonoCliente = "";
+        mensajeError = "";
+        mensajeExito = "";
+    }
+
+    private static List<DateOnly> DiasLaborables(int n)
+    {
+        var lista = new List<DateOnly>();
+        var cursor = DateOnly.FromDateTime(DateTime.Today);
+        while (lista.Count < n)
+        {
+            if (cursor.DayOfWeek != DayOfWeek.Saturday && cursor.DayOfWeek != DayOfWeek.Sunday)
+                lista.Add(cursor);
+            cursor = cursor.AddDays(1);
+        }
+        return lista;
+    }
+
+    private static string PrimerNombre(string completo)
+    {
+        var partes = completo.Trim().Split(' ');
+        return partes.Length > 0 && partes[0].Length > 0 ? partes[0] : "";
+    }
+}

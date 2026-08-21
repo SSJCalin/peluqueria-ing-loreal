@@ -1,0 +1,114 @@
+@page "/login"
+@layout PeluqueriaApp.Components.Layout.LayoutVacio
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Components.Authorization
+@inject PeluqueriaApp.Servicios.ServicioAutenticacion Auth
+@inject NavigationManager Navegacion
+
+@* Esta pagina usa render ESTATICO (sin @@rendermode) a proposito:
+   el login necesita acceso directo a la peticion HTTP para poder
+   crear la cookie de sesion, y eso no es posible desde un
+   componente interactivo. *@
+
+<PageTitle>Acceso | Panel ING</PageTitle>
+
+<div class="login-marco">
+    <div class="login-caja">
+
+        <header class="login-cabecera">
+            <h1 class="login-titulo">
+                <span>Peluqueria</span>
+                <span class="login-amp">y</span>
+                <span>Manicura</span>
+            </h1>
+            <div class="login-marca">ING</div>
+            <p class="login-sub">PANEL DE GESTION</p>
+        </header>
+
+        <div class="login-tarjeta">
+            <h2 class="login-h2">Iniciar sesion</h2>
+
+            <EditForm Model="Entrada" FormName="formularioLogin" OnValidSubmit="Entrar" method="post">
+                <DataAnnotationsValidator />
+
+                <label class="login-etiqueta">Usuario</label>
+                <InputText class="login-campo" @bind-Value="Entrada.NombreUsuario" autocomplete="username" />
+
+                <label class="login-etiqueta">Contrasena</label>
+                <InputText type="password" class="login-campo" @bind-Value="Entrada.Contrasena" autocomplete="current-password" />
+
+                <label class="login-recordar">
+                    <InputCheckbox @bind-Value="Entrada.Recordarme" />
+                    <span>Mantener la sesion iniciada en este dispositivo</span>
+                </label>
+
+                @if (!string.IsNullOrEmpty(mensajeError))
+                {
+                    <p class="login-error">@mensajeError</p>
+                }
+
+                <button type="submit" class="login-boton">Entrar</button>
+            </EditForm>
+
+            <p class="login-nota">Acceso solo para el personal autorizado del salon.</p>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [CascadingParameter]
+    private HttpContext? ContextoHttp { get; set; }
+
+    [SupplyParameterFromForm]
+    private DatosLogin Entrada { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string mensajeError = "";
+
+    public class DatosLogin
+    {
+        public string NombreUsuario { get; set; } = "";
+        public string Contrasena { get; set; } = "";
+        public bool Recordarme { get; set; } = true;
+    }
+
+    private async Task Entrar()
+    {
+        mensajeError = "";
+
+        var usuario = await Auth.ValidarAsync(Entrada.NombreUsuario, Entrada.Contrasena);
+
+        if (usuario is null)
+        {
+            mensajeError = "Usuario o contrasena incorrectos.";
+            return;
+        }
+
+        // Datos que quedan guardados en la cookie de sesion.
+        var identidad = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Name, usuario.NombreUsuario),
+            new Claim("NombreCompleto", usuario.NombreCompleto),
+        }, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        var propiedades = new AuthenticationProperties
+        {
+            IsPersistent = Entrada.Recordarme,   // el "recordarme"
+            ExpiresUtc = Entrada.Recordarme
+                ? DateTimeOffset.UtcNow.AddDays(30)
+                : null
+        };
+
+        await ContextoHttp!.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identidad),
+            propiedades);
+
+        Navegacion.NavigateTo(ReturnUrl ?? "/panel", forceLoad: true);
+    }
+}

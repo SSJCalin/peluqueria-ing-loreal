@@ -1,0 +1,13 @@
+@inject NavigationManager Navegacion
+
+@* Si alguien entra a una pagina protegida sin sesion, lo mandamos al login,
+   recordando a donde queria ir para llevarlo alli despues de entrar. *@
+
+@code {
+    protected override void OnInitialized()
+    {
+        var destino = Uri.EscapeDataString(
+            Navegacion.ToBaseRelativePath(Navegacion.Uri));
+        Navegacion.NavigateTo($"/login?returnUrl=/{destino}", forceLoad: true);
+    }
+}

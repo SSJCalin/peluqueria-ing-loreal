@@ -1,0 +1,550 @@
+@page "/panel"
+@rendermode InteractiveServer
+@layout PeluqueriaApp.Components.Layout.LayoutVacio
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PeluqueriaApp.Modelos
+@using PeluqueriaApp.Logica
+@using System.Security.Claims
+@inject PeluqueriaApp.Servicios.ServicioCitas Gestion
+
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+<PageTitle>Panel de gestion | ING</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="p-marco">
+
+            <header class="p-cabecera">
+                <div class="p-marca-bloque">
+                    <span class="p-marca">ING</span>
+                    <span class="p-marca-txt">Panel de gestion</span>
+                </div>
+                <div class="p-usuario">
+                    <span>@ObtenerNombre(context.User)</span>
+                    <a class="p-salir" href="/ausencias">Ausencias</a>
+                    <a class="p-salir" href="/logout">Salir</a>
+                </div>
+            </header>
+
+            <div class="p-contenido">
+
+                <!-- Controles -->
+                <div class="p-controles">
+                    <div class="p-grupo">
+                        <div class="p-vistas">
+                            <button class="p-vista @(vista == "dia" ? "p-vista-activa" : "")"
+                                    @onclick='() => vista = "dia"'>Dia</button>
+                            <button class="p-vista @(vista == "semana" ? "p-vista-activa" : "")"
+                                    @onclick='CambiarASemana'>Semana</button>
+                        </div>
+                        <button class="p-hoy" @onclick="IrHoy">Hoy</button>
+                    </div>
+
+                    <div class="p-nav">
+                        <button class="p-flecha" @onclick="() => Mover(-1)">&lsaquo;</button>
+                        <span class="p-fecha-txt">
+                            @(vista == "semana"
+                                ? $"Semana del {LunesDe(fechaActual).Day} de {LunesDe(fechaActual).ToDateTime(TimeOnly.MinValue):MMMM}"
+                                : fechaActual.ToDateTime(TimeOnly.MinValue).ToString("dddd d 'de' MMMM"))
+                        </span>
+                        <button class="p-flecha" @onclick="() => Mover(1)">&rsaquo;</button>
+                    </div>
+
+                    <div class="p-grupo">
+                        <button class="p-btn-sec" @onclick="AbrirNuevoBloqueo">Bloquear hueco</button>
+                        <button class="p-btn-pri" @onclick="AbrirNuevaCita">+ Nueva cita</button>
+                    </div>
+                </div>
+
+                @if (cargando)
+                {
+                    <p class="p-cargando">Cargando agenda...</p>
+                }
+                else if (vista == "dia")
+                {
+                    <div class="p-columnas">
+                        @foreach (var cat in new[] { "peluqueria", "manicura" })
+                        {
+                            var categoria = cat;
+                            var cfg = LogicaReservas.Categorias[categoria];
+                            <div class="p-columna">
+                                <div class="p-col-cabecera @(categoria == "peluqueria" ? "p-cab-pelu" : "p-cab-mani")">
+                                    <h3>@cfg.Nombre</h3>
+                                    <span>@LogicaReservas.AHora(cfg.InicioMinutos)-@LogicaReservas.AHora(cfg.FinMinutos) &middot; @QuienTrabaja(categoria)</span>
+                                </div>
+
+                                <div class="p-franjas">
+                                    @foreach (var t in Franjas(cfg))
+                                    {
+                                        var minuto = t;
+                                        var citasAqui = citasDia.Where(c => c.Categoria == categoria && c.InicioMinutos == minuto).ToList();
+                                        var bloqueosAqui = bloqueosDia.Where(b => b.Categoria == categoria && b.InicioMinutos == minuto).ToList();
+
+                                        <div class="p-franja">
+                                            <span class="p-hora">@LogicaReservas.AHora(minuto)</span>
+                                            <div class="p-slot">
+                                                @if (citasAqui.Count == 0 && bloqueosAqui.Count == 0)
+                                                {
+                                                    <button class="p-anadir" @onclick="() => AbrirNuevaCitaEn(categoria, minuto)">+</button>
+                                                }
+                                                else
+                                                {
+                                                    @foreach (var c in citasAqui)
+                                                    {
+                                                        var cita = c;
+                                                        <div class="p-cita @(cita.Estado == "atendida" ? "p-cita-atendida" : "") @(cita.Estado == "cancelada" ? "p-cita-cancelada" : "")"
+                                                             @onclick="() => AbrirEditarCita(cita)">
+                                                            <div class="p-cita-texto">
+                                                                <strong>@cita.Cliente</strong>
+                                                                <span>@NombreServicio(cita.ServicioId) &middot; @cita.Profesional</span>
+                                                            </div>
+                                                            @if (cita.Estado == "confirmada")
+                                                            {
+                                                                <button class="p-check" title="Marcar atendida"
+                                                                        @onclick:stopPropagation="true"
+                                                                        @onclick="() => MarcarAtendida(cita.Id)">&check;</button>
+                                                            }
+                                                            else if (cita.Estado == "atendida")
+                                                            {
+                                                                <span class="p-check-hecho">&check;</span>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @foreach (var b in bloqueosAqui)
+                                                    {
+                                                        var bloqueo = b;
+                                                        <div class="p-bloqueo" @onclick="() => BorrarBloqueo(bloqueo.Id)"
+                                                             title="Clic para quitar el bloqueo">
+                                                            @bloqueo.Profesional &middot; @bloqueo.Motivo (@bloqueo.DuracionMinutos min)
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="p-semana">
+                        @foreach (var d in DiasSemana())
+                        {
+                            var dia = d;
+                            var citasDelDia = citasSemana.Where(c => c.Fecha == dia && c.Estado != "cancelada")
+                                                          .OrderBy(c => c.InicioMinutos).ToList();
+                            var nBloqueos = bloqueosSemana.Count(b => b.Fecha == dia);
+                            var esHoy = dia == DateOnly.FromDateTime(DateTime.Today);
+
+                            <button class="p-dia-tarjeta @(esHoy ? "p-dia-hoy" : "")" @onclick="() => IrADia(dia)">
+                                <div class="p-dia-cab">
+                                    <span class="p-dia-nombre">@dia.ToDateTime(TimeOnly.MinValue).ToString("ddd d")</span>
+                                    <span class="p-dia-cuenta">@citasDelDia.Count cita@(citasDelDia.Count == 1 ? "" : "s")</span>
+                                </div>
+                                <div class="p-dia-lista">
+                                    @foreach (var c in citasDelDia.Take(6))
+                                    {
+                                        <div class="p-dia-item @(c.Categoria == "peluqueria" ? "p-item-pelu" : "p-item-mani")">
+                                            <span class="p-dia-hora">@LogicaReservas.AHora(c.InicioMinutos)</span>
+                                            <span class="p-dia-cli">@c.Cliente</span>
+                                        </div>
+                                    }
+                                    @if (citasDelDia.Count > 6)
+                                    {
+                                        <span class="p-dia-mas">+@(citasDelDia.Count - 6) mas</span>
+                                    }
+                                    @if (nBloqueos > 0)
+                                    {
+                                        <span class="p-dia-mas">@nBloqueos bloqueo@(nBloqueos == 1 ? "" : "s")</span>
+                                    }
+                                    @if (citasDelDia.Count == 0 && nBloqueos == 0)
+                                    {
+                                        <span class="p-dia-vacio">Sin citas</span>
+                                    }
+                                </div>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- ================= MODAL ================= -->
+            @if (modalAbierto)
+            {
+                <div class="p-modal-fondo" @onclick="CerrarModal">
+                    <div class="p-modal" @onclick:stopPropagation="true">
+                        <div class="p-modal-cab">
+                            <h3>@TituloModal()</h3>
+                            <button class="p-cerrar" @onclick="CerrarModal">&times;</button>
+                        </div>
+
+                        <label class="p-etiqueta">Categoria</label>
+                        <div class="p-opciones">
+                            @foreach (var cat in new[] { "peluqueria", "manicura" })
+                            {
+                                var categoria = cat;
+                                <button class="p-opcion @(mCategoria == categoria ? "p-opcion-activa" : "")"
+                                        @onclick="() => CambiarCategoriaModal(categoria)">
+                                    @LogicaReservas.Categorias[categoria].Nombre
+                                </button>
+                            }
+                        </div>
+
+                        <label class="p-etiqueta">Profesional</label>
+                        <div class="p-opciones">
+                            @foreach (var p in profesionalesModal)
+                            {
+                                var prof = p;
+                                <button class="p-opcion @(mProfesional == prof.Nombre ? "p-opcion-activa" : "")"
+                                        @onclick="() => mProfesional = prof.Nombre">
+                                    @prof.Nombre
+                                </button>
+                            }
+                        </div>
+
+                        @if (!esBloqueo)
+                        {
+                            <label class="p-etiqueta">Servicio</label>
+                            <select class="p-select" @bind="mServicioId">
+                                @foreach (var s in serviciosModal)
+                                {
+                                    <option value="@s.Id">@s.Nombre - @s.DuracionMinutos min - @s.Precio.ToString("0.00") &euro;</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <label class="p-etiqueta">Duracion</label>
+                            <div class="p-opciones">
+                                @foreach (var d in new[] { 15, 30, 45, 60 })
+                                {
+                                    var dur = d;
+                                    <button class="p-opcion @(mDuracion == dur ? "p-opcion-activa" : "")"
+                                            @onclick="() => mDuracion = dur">@dur min</button>
+                                }
+                            </div>
+
+                            <label class="p-etiqueta">Motivo</label>
+                            <input class="p-campo" @bind="mMotivo" placeholder="Descanso, ausencia..." />
+                        }
+
+                        <div class="p-fila">
+                            <div class="p-mitad">
+                                <label class="p-etiqueta">Fecha</label>
+                                <input type="date" class="p-campo" @bind="mFecha" />
+                            </div>
+                            <div class="p-mitad">
+                                <label class="p-etiqueta">Hora</label>
+                                <select class="p-select" @bind="mInicio">
+                                    @foreach (var t in FranjasModal())
+                                    {
+                                        <option value="@t">@LogicaReservas.AHora(t)</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @if (!esBloqueo)
+                        {
+                            <label class="p-etiqueta">Cliente</label>
+                            <input class="p-campo" @bind="mCliente" placeholder="Nombre y apellidos" />
+
+                            <label class="p-etiqueta">Telefono</label>
+                            <input class="p-campo" @bind="mTelefono" placeholder="600 000 000" />
+                        }
+
+                        @if (!string.IsNullOrEmpty(mensajeModal))
+                        {
+                            <p class="p-error">@mensajeModal</p>
+                        }
+
+                        <div class="p-modal-acciones">
+                            @if (editandoId is not null)
+                            {
+                                <button class="p-btn-borrar" @onclick="BorrarCitaActual">Eliminar</button>
+                            }
+                            <button class="p-btn-pri p-btn-ancho" @onclick="GuardarModal">
+                                @(editandoId is not null ? "Guardar cambios" : (esBloqueo ? "Bloquear" : "Crear cita"))
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+
+@code {
+    // ---------- Estado general ----------
+    private string vista = "dia";
+    private DateOnly fechaActual = DateOnly.FromDateTime(DateTime.Today);
+    private bool cargando = true;
+
+    private List<Cita> citasDia = new();
+    private List<Bloqueo> bloqueosDia = new();
+    private List<Cita> citasSemana = new();
+    private List<Bloqueo> bloqueosSemana = new();
+    private List<Servicio> todosServicios = new();
+    private List<Profesional> plantilla = new();
+    private List<BloqueoPeriodo> periodosDia = new();
+    
+    
+
+    // ---------- Estado del modal ----------
+    private bool modalAbierto = false;
+    private bool esBloqueo = false;
+    private int? editandoId = null;
+    private string mCategoria = "peluqueria";
+    private string mProfesional = "";
+    private int mServicioId;
+    private int mDuracion = 30;
+    private string mMotivo = "Descanso";
+    private DateTime mFecha = DateTime.Today;
+    private int mInicio = 13 * 60;
+    private string mCliente = "";
+    private string mTelefono = "";
+    private string mensajeModal = "";
+    private List<Profesional> profesionalesModal = new();
+    private List<Servicio> serviciosModal = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        todosServicios = await Gestion.ObtenerTodosLosServiciosAsync();
+        plantilla = await Gestion.ObtenerTodasLasProfesionalesAsync();
+        await CargarDia();
+        cargando = false;
+    }
+
+    private string ObtenerNombre(ClaimsPrincipal usuario)
+        => usuario.FindFirst("NombreCompleto")?.Value ?? usuario.Identity?.Name ?? "";
+
+    private string NombreServicio(int id)
+        => todosServicios.FirstOrDefault(s => s.Id == id)?.Nombre ?? "";
+
+    private static DateOnly LunesDe(DateOnly f)
+    {
+        int dia = (int)f.DayOfWeek;
+        int diff = dia == 0 ? -6 : 1 - dia;
+        return f.AddDays(diff);
+    }
+
+    private List<DateOnly> DiasSemana()
+    {
+        var lunes = LunesDe(fechaActual);
+        return Enumerable.Range(0, 5).Select(i => lunes.AddDays(i)).ToList();
+    }
+
+    private static List<int> Franjas(ConfigCategoria cfg)
+    {
+        var lista = new List<int>();
+        for (int t = cfg.InicioMinutos; t < cfg.FinMinutos; t += 15) lista.Add(t);
+        return lista;
+    }
+
+    private List<int> FranjasModal()
+    {
+        var cfg = LogicaReservas.Categorias[mCategoria];
+        int dur = esBloqueo ? mDuracion : (serviciosModal.FirstOrDefault(s => s.Id == mServicioId)?.DuracionMinutos ?? 30);
+        var lista = new List<int>();
+        for (int t = cfg.InicioMinutos; t + dur <= cfg.FinMinutos; t += 15) lista.Add(t);
+        return lista;
+    }
+
+    // ---------- Carga de datos ----------
+    private async Task CargarDia()
+    {
+        citasDia = await Gestion.ObtenerCitasDelDiaAsync(fechaActual);
+        bloqueosDia = await Gestion.ObtenerBloqueosDelDiaAsync(fechaActual);
+        periodosDia = await Gestion.ObtenerPeriodosDeFechaAsync(fechaActual);
+    }
+
+    private async Task CargarSemana()
+    {
+        var lunes = LunesDe(fechaActual);
+        var viernes = lunes.AddDays(4);
+        citasSemana = await Gestion.ObtenerCitasEntreAsync(lunes, viernes);
+        bloqueosSemana = await Gestion.ObtenerBloqueosEntreAsync(lunes, viernes);
+    }
+
+    private async Task CambiarASemana()
+    {
+        vista = "semana";
+        await CargarSemana();
+    }
+
+    private async Task IrHoy()
+    {
+        fechaActual = DateOnly.FromDateTime(DateTime.Today);
+        await Recargar();
+    }
+
+    private async Task IrADia(DateOnly d)
+    {
+        fechaActual = d;
+        vista = "dia";
+        await CargarDia();
+    }
+
+    private async Task Mover(int direccion)
+    {
+        if (vista == "semana")
+        {
+            fechaActual = fechaActual.AddDays(7 * direccion);
+        }
+        else
+        {
+            do { fechaActual = fechaActual.AddDays(direccion); }
+            while (fechaActual.DayOfWeek == DayOfWeek.Saturday || fechaActual.DayOfWeek == DayOfWeek.Sunday);
+        }
+        await Recargar();
+    }
+
+    private async Task Recargar()
+    {
+        if (vista == "dia") await CargarDia();
+        else await CargarSemana();
+    }
+
+    // ---------- Acciones rapidas ----------
+    private async Task MarcarAtendida(int id)
+    {
+        await Gestion.CambiarEstadoCitaAsync(id, "atendida");
+        await Recargar();
+    }
+
+    private async Task BorrarBloqueo(int id)
+    {
+        await Gestion.EliminarBloqueoAsync(id);
+        await Recargar();
+    }
+
+    // ---------- Modal ----------
+    private string TituloModal()
+        => esBloqueo
+            ? (editandoId is not null ? "Editar bloqueo" : "Bloquear hueco")
+            : (editandoId is not null ? "Editar cita" : "Nueva cita");
+
+    private async Task PrepararModal(string categoria)
+    {
+        mCategoria = categoria;
+        profesionalesModal = await Gestion.ObtenerProfesionalesAsync(categoria);
+        serviciosModal = await Gestion.ObtenerServiciosAsync(categoria);
+        if (!profesionalesModal.Any(p => p.Nombre == mProfesional))
+            mProfesional = profesionalesModal.FirstOrDefault()?.Nombre ?? "";
+        if (!serviciosModal.Any(s => s.Id == mServicioId))
+            mServicioId = serviciosModal.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task CambiarCategoriaModal(string categoria)
+    {
+        await PrepararModal(categoria);
+    }
+
+    private async Task AbrirNuevaCita()
+    {
+        esBloqueo = false;
+        editandoId = null;
+        mensajeModal = "";
+        mCliente = ""; mTelefono = "";
+        mFecha = fechaActual.ToDateTime(TimeOnly.MinValue);
+        mInicio = 13 * 60;
+        await PrepararModal("peluqueria");
+        modalAbierto = true;
+    }
+
+    private async Task AbrirNuevaCitaEn(string categoria, int minuto)
+    {
+        esBloqueo = false;
+        editandoId = null;
+        mensajeModal = "";
+        mCliente = ""; mTelefono = "";
+        mFecha = fechaActual.ToDateTime(TimeOnly.MinValue);
+        mInicio = minuto;
+        await PrepararModal(categoria);
+        modalAbierto = true;
+    }
+
+    private async Task AbrirNuevoBloqueo()
+    {
+        esBloqueo = true;
+        editandoId = null;
+        mensajeModal = "";
+        mMotivo = "Descanso";
+        mDuracion = 30;
+        mFecha = fechaActual.ToDateTime(TimeOnly.MinValue);
+        mInicio = 13 * 60;
+        await PrepararModal("peluqueria");
+        modalAbierto = true;
+    }
+
+    private async Task AbrirEditarCita(Cita cita)
+    {
+        esBloqueo = false;
+        editandoId = cita.Id;
+        mensajeModal = "";
+        mCliente = cita.Cliente;
+        mTelefono = cita.Telefono;
+        mFecha = cita.Fecha.ToDateTime(TimeOnly.MinValue);
+        mInicio = cita.InicioMinutos;
+        mServicioId = cita.ServicioId;
+        mProfesional = cita.Profesional;
+        await PrepararModal(cita.Categoria);
+        modalAbierto = true;
+    }
+
+    private void CerrarModal() => modalAbierto = false;
+
+    private async Task GuardarModal()
+    {
+        mensajeModal = "";
+        var fecha = DateOnly.FromDateTime(mFecha);
+
+        if (esBloqueo)
+        {
+            var r = await Gestion.CrearBloqueoAsync(mCategoria, mProfesional, fecha, mInicio, mDuracion, mMotivo);
+            if (!r.Exito) { mensajeModal = r.Mensaje; return; }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(mCliente)) { mensajeModal = "Indica el nombre del cliente."; return; }
+
+            var r = editandoId is null
+                ? await Gestion.CrearCitaPanelAsync(mCategoria, mProfesional, fecha, mInicio, mServicioId, mCliente.Trim(), mTelefono.Trim())
+                : await Gestion.ActualizarCitaAsync(editandoId.Value, mCategoria, mProfesional, fecha, mInicio, mServicioId, mCliente.Trim(), mTelefono.Trim());
+
+            if (!r.Exito) { mensajeModal = r.Mensaje; return; }
+        }
+
+        modalAbierto = false;
+        await Recargar();
+    }
+
+    private async Task BorrarCitaActual()
+    {
+        if (editandoId is null) return;
+        await Gestion.EliminarCitaAsync(editandoId.Value);
+        modalAbierto = false;
+        await Recargar();
+    }
+    // Devuelve quien trabaja ese dia en esa categoria, para la cabecera.
+    private string QuienTrabaja(string categoria)
+    {
+        var deEsaCategoria = plantilla.Where(p => p.Categoria == categoria).ToList();
+        var trabajando = deEsaCategoria
+            .Where(p => p.TrabajaEl(fechaActual.DayOfWeek))
+            .Where(p => !periodosDia.Any(per => per.Profesional == p.Nombre
+                                                && per.Franja == "completo"))
+            .Select(p => p.Nombre)
+            .ToList();
+
+        if (trabajando.Count == 0) return "Cerrado hoy";
+        return string.Join(", ", trabajando);
+    }
+    
+}
